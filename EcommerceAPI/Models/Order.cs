@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace EcommerceAPI.Models
 {
@@ -12,5 +13,7 @@ namespace EcommerceAPI.Models
 
         // Navigation property: Each order belongs to a user
         public User? User { get; set; }
+
+        public List<OrderProduct> OrderProducts { get; set; } = new List<OrderProduct>();
     }
 }

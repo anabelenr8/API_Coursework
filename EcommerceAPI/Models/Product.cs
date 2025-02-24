@@ -8,5 +8,7 @@ namespace EcommerceAPI.Models
         public string Description { get; set; } = string.Empty;
         public int Stock { get; set; }
         public string Category { get; set; } = string.Empty;
+        public List<OrderProduct> OrderProducts { get; set; } = new List<OrderProduct>();
+
     }
 }
