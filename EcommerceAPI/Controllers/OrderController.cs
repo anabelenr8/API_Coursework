@@ -1,20 +1,34 @@
 using Microsoft.AspNetCore.Mvc;
 using EcommerceAPI.Data;
 using EcommerceAPI.Models;
+using EcommerceAPI.Services;
 using System.Collections.Generic;
-using System.Linq;
 
 [Route("api/orders")]
 [ApiController]
 public class OrderController : ControllerBase
 {
+    private readonly IOrderProductService _orderProductService;
     private readonly EcommerceDbContext _context;
 
-    public OrderController(EcommerceDbContext context)
+    public OrderController(IOrderProductService orderProductService, EcommerceDbContext context)
     {
-        _context = context;
+        _orderProductService = orderProductService;
+        _context = context; // Now _context is properly initialized
     }
-    
+
+    [HttpPost]
+    public async Task<IActionResult> AddProductToOrder([FromBody] OrderProduct orderProduct)
+    {
+        var result = await _orderProductService.AddProductToOrder(orderProduct);
+
+        if (result == null)
+        {
+            return BadRequest(new { message = "Invalid OrderId or ProductId." });
+        }
+
+        return Ok(new { message = "Product added to order successfully!", orderProduct = result });
+    }
 
     // Get All Orders
     [HttpGet]
@@ -43,19 +57,16 @@ public class OrderController : ControllerBase
     }
 
     // Create Order
-    [HttpPost]
+    [HttpPost("create")]
     public ActionResult<Order> AddOrder(Order order)
     {
-        // 🔹 Validate if User Exists
         var user = _context.Users.Find(order.UserId);
         if (user == null)
         {
             return BadRequest(new { message = "Invalid UserId. User does not exist." });
         }
 
-        // 🔹 Ensure User is Assigned
         order.User = user;
-
         _context.Orders.Add(order);
         _context.SaveChanges();
 
@@ -90,3 +101,4 @@ public class OrderController : ControllerBase
         return NoContent();
     }
 }
+

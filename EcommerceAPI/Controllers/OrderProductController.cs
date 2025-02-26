@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using EcommerceAPI.Data;
 using EcommerceAPI.Models;
-using System.Linq;
+using Microsoft.EntityFrameworkCore;
 
 [Route("api/orderproducts")]
 [ApiController]
@@ -18,18 +18,29 @@ public class OrderProductController : ControllerBase
     [HttpPost]
     public ActionResult<OrderProduct> AddProductToOrder(OrderProduct orderProduct)
     {
-        // Check if Order & Product Exist
-        var order = _context.Orders.Find(orderProduct.OrderId);
-        var product = _context.Products.Find(orderProduct.ProductId);
+        var existingOrder = _context.Orders.AsNoTracking().FirstOrDefault(o => o.Id == orderProduct.OrderId);
+        var existingProduct = _context.Products.AsNoTracking().FirstOrDefault(p => p.Id == orderProduct.ProductId);
 
-        if (order == null || product == null)
+        if (existingOrder == null || existingProduct == null)
+        {
             return BadRequest(new { message = "Invalid OrderId or ProductId." });
+        }
 
-        _context.OrderProducts.Add(orderProduct);
+        // ✅ Correct way: Only set OrderId & ProductId, no full Order/Product objects
+        var newOrderProduct = new OrderProduct
+        {
+            OrderId = orderProduct.OrderId,
+            ProductId = orderProduct.ProductId,
+            Quantity = orderProduct.Quantity
+        };
+
+        _context.OrderProducts.Add(newOrderProduct);
         _context.SaveChanges();
 
         return Ok(new { message = "Product added to order successfully!" });
     }
+
+
 
     // ✅ Get All Products in an Order
     [HttpGet("order/{orderId}")]

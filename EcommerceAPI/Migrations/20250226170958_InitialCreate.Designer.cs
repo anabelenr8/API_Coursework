@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcommerceAPI.Migrations
 {
     [DbContext(typeof(EcommerceDbContext))]
-    [Migration("20250224215352_AddOrderProductRelations")]
-    partial class AddOrderProductRelations
+    [Migration("20250226170958_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -85,7 +85,7 @@ namespace EcommerceAPI.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderProduct");
+                    b.ToTable("OrderProducts");
                 });
 
             modelBuilder.Entity("EcommerceAPI.Models.Payment", b =>
@@ -382,9 +382,9 @@ namespace EcommerceAPI.Migrations
                         .IsRequired();
 
                     b.HasOne("EcommerceAPI.Models.Product", "Product")
-                        .WithMany()
+                        .WithMany("OrderProducts")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Order");
@@ -455,6 +455,11 @@ namespace EcommerceAPI.Migrations
                 });
 
             modelBuilder.Entity("EcommerceAPI.Models.Order", b =>
+                {
+                    b.Navigation("OrderProducts");
+                });
+
+            modelBuilder.Entity("EcommerceAPI.Models.Product", b =>
                 {
                     b.Navigation("OrderProducts");
                 });

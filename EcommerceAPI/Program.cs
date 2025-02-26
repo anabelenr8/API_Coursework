@@ -5,13 +5,16 @@ using System.Text;
 using EcommerceAPI.Data;
 using EcommerceAPI.Models;
 using Microsoft.EntityFrameworkCore;
+using EcommerceAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ✅ Configure SQLite Database
 builder.Services.AddDbContext<EcommerceDbContext>(options =>
-    options.UseSqlite("Data Source=ecommerce.db")
-);
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// ✅ Register Services
+builder.Services.AddScoped<IOrderProductService, OrderProductService>();
 
 // ✅ Configure Identity
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
@@ -43,7 +46,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // ✅ Add Swagger
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace EcommerceAPI.Models
 {
@@ -12,6 +13,7 @@ namespace EcommerceAPI.Models
         public string Status { get; set; } = "Pending";
 
         // Navigation property: Each order belongs to a user
+        [JsonIgnore]
         public User? User { get; set; }
 
         public List<OrderProduct> OrderProducts { get; set; } = new List<OrderProduct>();
