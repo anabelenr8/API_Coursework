@@ -79,3 +79,4 @@ Authorization: Bearer <your_token>
 ```sh
 git clone https://github.com/yourusername/EcommerceAPI.git
 cd EcommerceAPI
+dotnet run
