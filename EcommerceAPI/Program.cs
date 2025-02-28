@@ -9,19 +9,22 @@ using EcommerceAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped<IEmailService, EmailService>();
+// Load configuration files
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true);
 
-
-// ✅ Configure SQLite Database
+// Configure SQLite Database
 builder.Services.AddDbContext<EcommerceDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ✅ Register Services
+// Register Services
 builder.Services.AddScoped<IOrderProductService, OrderProductService>();
 
-// ✅ Configure Identity
+// Configure Email Service using IOptions<EmailSettings>
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Configure Identity
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 {
     options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_@."; 
@@ -32,7 +35,8 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 .AddDefaultTokenProviders();
 
 // ✅ Configure Authentication (JWT)
-var key = Encoding.UTF8.GetBytes("7S9Eg8lDJuVTkWWRpes74ALiJJV+H8yz/c/OVp/SvPI=");
+var key = Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:CNjJtE01Vry7XZuARdIaFPoJtogF+okPgJQKSyPq9+g="] ?? "YOUR_DEFAULT_SECRET_KEY");
+
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -63,7 +67,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// ✅ Make sure Swagger is **ALWAYS** available
+// ✅ Ensure Swagger is always available
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -72,3 +76,4 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.Run();
+

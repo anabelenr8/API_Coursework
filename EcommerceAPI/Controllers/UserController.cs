@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EcommerceAPI.Services;
+
 
 namespace EcommerceAPI.Controllers
 {
@@ -15,14 +17,14 @@ namespace EcommerceAPI.Controllers
         private readonly EcommerceDbContext _context;
         private readonly IEmailService _emailService;
 
-        // ✅ Combined Constructor (Injects both DbContext & Email Service)
+        // Combined Constructor (Injects both DbContext & Email Service)
         public UserController(EcommerceDbContext context, IEmailService emailService)
         {
             _context = context;
             _emailService = emailService;
         }
 
-        // ✅ GET ALL USERS
+        // GET ALL USERS
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
@@ -30,7 +32,7 @@ namespace EcommerceAPI.Controllers
             return Ok(users);
         }
 
-        // ✅ GET SINGLE USER BY ID
+        // GET SINGLE USER BY ID
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUser(int id)
         {
@@ -42,7 +44,7 @@ namespace EcommerceAPI.Controllers
             return Ok(user);
         }
 
-        // ✅ REGISTER USER + SEND WELCOME EMAIL
+        // REGISTER USER + SEND WELCOME EMAIL
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterModel model)
         {
@@ -64,9 +66,7 @@ namespace EcommerceAPI.Controllers
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
-
-            Console.WriteLine($"Attempting to send email to {user.Email}...");
-
+ 
             await _emailService.SendEmailAsync(
                 user.Email,
                 "Welcome to Our Ecommerce API",
@@ -78,7 +78,7 @@ namespace EcommerceAPI.Controllers
             return Ok(new { message = "User registered successfully! A welcome email has been sent." });
         }
 
-        // ✅ CREATE A NEW USER (Manual Entry)
+        // CREATE A NEW USER (Manual Entry)
         [HttpPost]
         public async Task<ActionResult<User>> AddUser(User user)
         {
@@ -101,7 +101,7 @@ namespace EcommerceAPI.Controllers
             return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
         }
 
-        // ✅ UPDATE USER
+        // UPDATE USER
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] User updatedUser)
         {
@@ -127,7 +127,7 @@ namespace EcommerceAPI.Controllers
             }
         }
 
-        // ✅ DELETE USER
+        // DELETE USER
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {

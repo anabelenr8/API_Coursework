@@ -1,4 +1,9 @@
-public interface IEmailService
+using System.Threading.Tasks;
+
+namespace EcommerceAPI.Services
 {
-    Task SendEmailAsync(string toEmail, string subject, string body);
+    public interface IEmailService
+    {
+        Task<bool> SendEmailAsync(string to, string subject, string body);
+    }
 }
