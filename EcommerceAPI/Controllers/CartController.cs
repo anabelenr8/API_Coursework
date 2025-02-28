@@ -1,64 +1,103 @@
-using Microsoft.AspNetCore.Mvc;
 using EcommerceAPI.Data;
+using EcommerceAPI.DTOs;
 using EcommerceAPI.Models;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-[Route("api/[controller]")]
-[ApiController]
-public class CartController : ControllerBase
+
+namespace EcommerceAPI.Controllers
 {
-    private readonly EcommerceDbContext _context;
-
-    public CartController(EcommerceDbContext context)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class CartController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly EcommerceDbContext _context;
 
-    [HttpGet]
-    public ActionResult<IEnumerable<Cart>> GetCarts()
-    {
-        return Ok(_context.Carts.ToList());
-    }
+        public CartController(EcommerceDbContext context)
+        {
+            _context = context;
+        }
 
-    [HttpGet("{id}")]
-    public ActionResult<Cart> GetCart(int id)
-    {
-        var cart = _context.Carts.Find(id);
-        if (cart == null) return NotFound();
-        return Ok(cart);
-    }
+        // GET ALL CARTS
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<CartDTO>>> GetCarts()
+        {
+            var carts = await _context.Carts
+                .Include(c => c.CartItems)
+                .Select(c => new CartDTO
+                {
+                    Id = c.Id,
+                    UserId = c.UserId,
+                    Items = c.CartItems.Select(i => new CartItemDTO
+                    {
+                        Quantity = i.Quantity
+                    }).ToList()
+                })
+                .ToListAsync();
 
-    [HttpPost]
-    public ActionResult<Cart> AddCart(Cart cart)
-    {
-        _context.Carts.Add(cart);
-        _context.SaveChanges();
-        return CreatedAtAction(nameof(GetCart), new { id = cart.Id }, cart);
-    }
+            return Ok(carts);
+        }
 
-    [HttpPut("{id}")]
-    public IActionResult UpdateCart(int id, Cart updatedCart)
-    {
-        var cart = _context.Carts.Find(id);
-        if (cart == null) return NotFound();
+        // GET CART BY ID
+        [HttpGet("{id}")]
+        public async Task<ActionResult<CartDTO>> GetCart(int id)
+        {
+            var cart = await _context.Carts
+                .Include(c => c.CartItems)
+                .FirstOrDefaultAsync(c => c.Id == id);
 
-        cart.UserId = updatedCart.UserId;
-        cart.ProductId = updatedCart.ProductId;
-        cart.Quantity = updatedCart.Quantity;
+            if (cart == null) return NotFound();
 
-        _context.SaveChanges();
-        return NoContent();
-    }
+            var cartDTO = new CartDTO
+            {
+                Id = cart.Id,
+                UserId = cart.UserId,
+                Items = cart.CartItems.Select(i => new CartItemDTO
+                {
+                    Quantity = i.Quantity
+                }).ToList()
+            };
 
-    [HttpDelete("{id}")]
-    public IActionResult DeleteCart(int id)
-    {
-        var cart = _context.Carts.Find(id);
-        if (cart == null) return NotFound();
+            return Ok(cartDTO);
+        }
 
-        _context.Carts.Remove(cart);
-        _context.SaveChanges();
-        return NoContent();
+        // ADD CART
+        [HttpPost]
+        public async Task<ActionResult<CartDTO>> AddCart(CartDTO cartDTO)
+        {
+            var cart = new Cart
+            {
+                UserId = cartDTO.UserId
+            };
+
+            _context.Carts.Add(cart);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetCart), new { id = cart.Id }, cartDTO);
+        }
+
+        // UPDATE CART
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateCart(int id, CartDTO updatedCart)
+        {
+            var cart = await _context.Carts.FindAsync(id);
+            if (cart == null) return NotFound();
+
+            cart.UserId = updatedCart.UserId;
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // DELETE CART
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCart(int id)
+        {
+            var cart = await _context.Carts.FindAsync(id);
+            if (cart == null) return NotFound();
+
+            _context.Carts.Remove(cart);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
     }
 }

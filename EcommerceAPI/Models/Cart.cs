@@ -3,12 +3,12 @@ namespace EcommerceAPI.Models
     public class Cart
     {
         public int Id { get; set; }
-        public int UserId { get; set; } // Foreign key
-        public int ProductId { get; set; } // Foreign key
-        public int Quantity { get; set; }
+        public int UserId { get; set; }  // Foreign key to User
 
-        // Navigation properties
+        // FIX: Remove ProductId and use a list of CartItems
+        public List<CartItem> CartItems { get; set; } = new List<CartItem>();
+
+        // Navigation property
         public User? User { get; set; }
-        public Product? Product { get; set; }
     }
 }

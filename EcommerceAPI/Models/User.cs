@@ -11,5 +11,7 @@ namespace EcommerceAPI.Models
         public string Role { get; set; } = "User";
 
         public List<Order> Orders { get; set; } = new List<Order>();
+
+        public override string? Email { get; set; } = string.Empty;
     }
 }

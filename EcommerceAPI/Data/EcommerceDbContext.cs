@@ -11,7 +11,6 @@ namespace EcommerceAPI.Data
         
         // Parameterless constructor for migrations
         public EcommerceDbContext() { }
-
         public DbSet<OrderProduct> OrderProducts { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<Order> Orders { get; set; }
@@ -24,8 +23,7 @@ namespace EcommerceAPI.Data
 
             // ✅ User → Orders (One-to-Many)
             modelBuilder.Entity<User>()
-                .HasMany<Order>(u => u.Orders) // ✅ Explicitly specify the type
-
+                .HasMany(u => u.Orders)
                 .WithOne(o => o.User)
                 .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -36,15 +34,16 @@ namespace EcommerceAPI.Data
 
             modelBuilder.Entity<OrderProduct>()
                 .HasOne(op => op.Order)
-                .WithMany(o => o.OrderProducts)
+                .WithMany(o => o.OrderProducts)  // ✅ Ensure OrderProducts is used
                 .HasForeignKey(op => op.OrderId)
-                .OnDelete(DeleteBehavior.Cascade); // Ensures data consistency
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<OrderProduct>()
                 .HasOne(op => op.Product)
-                .WithMany(p => p.OrderProducts) // Added the missing navigation property
+                .WithMany(p => p.OrderProducts) // ✅ Ensure Product has OrderProducts
                 .HasForeignKey(op => op.ProductId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevents accidental deletions
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
+

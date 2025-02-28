@@ -1,65 +1,62 @@
 using Microsoft.AspNetCore.Mvc;
 using EcommerceAPI.Data;
+using EcommerceAPI.DTOs;
 using EcommerceAPI.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
-[Route("api/[controller]")]
-[ApiController]
-public class PaymentController : ControllerBase
+namespace EcommerceAPI.Controllers
 {
-    private readonly EcommerceDbContext _context;
-
-    public PaymentController(EcommerceDbContext context)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class PaymentController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly EcommerceDbContext _context;
 
-    [HttpGet]
-    public ActionResult<IEnumerable<Payment>> GetPayments()
-    {
-        return Ok(_context.Payments.ToList());
-    }
+        public PaymentController(EcommerceDbContext context)
+        {
+            _context = context;
+        }
 
-    [HttpGet("{id}")]
-    public ActionResult<Payment> GetPayment(int id)
-    {
-        var payment = _context.Payments.Find(id);
-        if (payment == null) return NotFound();
-        return Ok(payment);
-    }
+        // ✅ GET ALL PAYMENTS
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<PaymentDTO>>> GetPayments()
+        {
+            var payments = await _context.Payments
+                .Select(p => new PaymentDTO
+                {
+                    Id = p.Id,
+                    UserId = p.UserId,
+                    OrderId = p.OrderId,
+                    Amount = p.Amount,
+                    PaymentMethod = p.PaymentMethod,
+                    Status = p.Status
+                })
+                .ToListAsync();
 
-    [HttpPost]
-    public ActionResult<Payment> AddPayment(Payment payment)
-    {
-        _context.Payments.Add(payment);
-        _context.SaveChanges();
-        return CreatedAtAction(nameof(GetPayment), new { id = payment.Id }, payment);
-    }
+            return Ok(payments);
+        }
 
-    [HttpPut("{id}")]
-    public IActionResult UpdatePayment(int id, Payment updatedPayment)
-    {
-        var payment = _context.Payments.Find(id);
-        if (payment == null) return NotFound();
+        // ✅ ADD PAYMENT
+        [HttpPost]
+        public async Task<ActionResult<PaymentDTO>> AddPayment(PaymentDTO paymentDTO)
+        {
+            var payment = new Payment
+            {
+                UserId = paymentDTO.UserId,
+                OrderId = paymentDTO.OrderId,
+                Amount = paymentDTO.Amount,
+                PaymentMethod = paymentDTO.PaymentMethod,
+                Status = paymentDTO.Status
+            };
 
-        payment.OrderId = updatedPayment.OrderId;
-        payment.Amount = updatedPayment.Amount;
-        payment.PaymentMethod = updatedPayment.PaymentMethod;
-        payment.Status = updatedPayment.Status;
+            _context.Payments.Add(payment);
+            await _context.SaveChangesAsync();
 
-        _context.SaveChanges();
-        return NoContent();
-    }
-
-    [HttpDelete("{id}")]
-    public IActionResult DeletePayment(int id)
-    {
-        var payment = _context.Payments.Find(id);
-        if (payment == null) return NotFound();
-
-        _context.Payments.Remove(payment);
-        _context.SaveChanges();
-        return NoContent();
+            paymentDTO.Id = payment.Id;
+            return CreatedAtAction(nameof(GetPayments), new { id = payment.Id }, paymentDTO);
+        }
     }
 }
