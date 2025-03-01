@@ -1,20 +1,15 @@
-using System.Collections.Generic;
-
 namespace EcommerceAPI.DTOs
 {
     public class CartDTO
     {
         public int Id { get; set; }
         public int UserId { get; set; }
-        
-        // ✅ FIX: Add a list of cart items
-        public List<CartItemDTO> Items { get; set; } = new List<CartItemDTO>();
+        public List<CartProductDTO> Items { get; set; } = new();
     }
 
-    public class CartItemDTO
+    public class CartProductDTO  // 
     {
-        public int ProductId { get; set; }
+        public int ProductId { get; set; }  // Essential for mapping
         public int Quantity { get; set; }
     }
 }
-

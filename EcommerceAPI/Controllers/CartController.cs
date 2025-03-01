@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using EcommerceAPI.Data;
 using EcommerceAPI.DTOs;
 using EcommerceAPI.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace EcommerceAPI.Controllers
 {
@@ -18,7 +20,7 @@ namespace EcommerceAPI.Controllers
             _context = context;
         }
 
-        // GET ALL CARTS
+        // ✅ GET ALL CARTS
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CartDTO>>> GetCarts()
         {
@@ -28,8 +30,9 @@ namespace EcommerceAPI.Controllers
                 {
                     Id = c.Id,
                     UserId = c.UserId,
-                    Items = c.CartItems.Select(i => new CartItemDTO
+                    Items = c.CartItems.Select(i => new CartProductDTO
                     {
+                        ProductId = i.ProductId,
                         Quantity = i.Quantity
                     }).ToList()
                 })
@@ -38,7 +41,7 @@ namespace EcommerceAPI.Controllers
             return Ok(carts);
         }
 
-        // GET CART BY ID
+        // ✅ GET CART BY ID
         [HttpGet("{id}")]
         public async Task<ActionResult<CartDTO>> GetCart(int id)
         {
@@ -48,56 +51,17 @@ namespace EcommerceAPI.Controllers
 
             if (cart == null) return NotFound();
 
-            var cartDTO = new CartDTO
+            return Ok(new CartDTO
             {
                 Id = cart.Id,
                 UserId = cart.UserId,
-                Items = cart.CartItems.Select(i => new CartItemDTO
+                Items = cart.CartItems.Select(i => new CartProductDTO
                 {
+                    ProductId = i.ProductId,
                     Quantity = i.Quantity
                 }).ToList()
-            };
-
-            return Ok(cartDTO);
-        }
-
-        // ADD CART
-        [HttpPost]
-        public async Task<ActionResult<CartDTO>> AddCart(CartDTO cartDTO)
-        {
-            var cart = new Cart
-            {
-                UserId = cartDTO.UserId
-            };
-
-            _context.Carts.Add(cart);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetCart), new { id = cart.Id }, cartDTO);
-        }
-
-        // UPDATE CART
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCart(int id, CartDTO updatedCart)
-        {
-            var cart = await _context.Carts.FindAsync(id);
-            if (cart == null) return NotFound();
-
-            cart.UserId = updatedCart.UserId;
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
-
-        // DELETE CART
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCart(int id)
-        {
-            var cart = await _context.Carts.FindAsync(id);
-            if (cart == null) return NotFound();
-
-            _context.Carts.Remove(cart);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            });
         }
     }
 }
+

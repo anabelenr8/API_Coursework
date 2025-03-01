@@ -27,26 +27,38 @@ namespace EcommerceAPI.Services
 
         public async Task<bool> SendEmailAsync(string recipientEmail, string subject, string body)
         {
-            
-            using var client = new SmtpClient(_emailSettings.SmtpServer)
+            try
             {
-                Port = _emailSettings.SmtpPort,
-                Credentials = new NetworkCredential(_emailSettings.SenderEmail, _emailSettings.SenderPassword),
-                EnableSsl = true
-            };
+                using var client = new SmtpClient(_emailSettings.SmtpServer)
+                {
+                    Port = _emailSettings.SmtpPort,
+                    Credentials = new NetworkCredential(_emailSettings.SenderEmail, _emailSettings.SenderPassword),
+                    EnableSsl = true
+                };
 
-            var mailMessage = new MailMessage
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName),
+                    Subject = subject,
+                    Body = body,
+                    IsBodyHtml = true
+                };
+
+                mailMessage.To.Add(recipientEmail);
+
+                Console.WriteLine($"Sending email to {recipientEmail}...");
+                await client.SendMailAsync(mailMessage);
+                Console.WriteLine("Email sent successfully!");
+
+                return true;
+            }
+            catch (Exception ex)
             {
-                From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true
-            };
-
-            mailMessage.To.Add(recipientEmail);
-            await client.SendMailAsync(mailMessage);
-            return true;
+                Console.WriteLine($"Email failed: {ex.Message}");
+                return false;
+            }
         }
+
 
 
     }

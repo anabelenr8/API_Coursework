@@ -1,12 +1,12 @@
-using EcommerceAPI.Data;
-using EcommerceAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using EcommerceAPI.Data;
+using EcommerceAPI.DTOs;
+using EcommerceAPI.Models;
+using EcommerceAPI.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using EcommerceAPI.Services;
-using EcommerceAPI.DTOs;
 
 namespace EcommerceAPI.Controllers
 {
@@ -15,9 +15,8 @@ namespace EcommerceAPI.Controllers
     public class UserController : ControllerBase
     {
         private readonly EcommerceDbContext _context;
-        private readonly IEmailService _emailService;
+        private readonly IEmailService _emailService;  // Inject Email Service
 
-        // Constructor
         public UserController(EcommerceDbContext context, IEmailService emailService)
         {
             _context = context;
@@ -29,79 +28,60 @@ namespace EcommerceAPI.Controllers
         public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsers()
         {
             var users = await _context.Users
-                .Select(u => new UserDTO 
-                { 
-                    Id = u.Id, 
-                    Name = u.Name ?? "",  // Ensure Name is never null
-                    Email = u.Email ?? "", // Ensure Email is never null
-                    Role = u.Role ?? ""   // Ensure Role is never null
+                .Select(u => new UserDTO
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    Email = u.Email ?? string.Empty,  //Prevent null issues
+                    Role = u.Role
                 })
                 .ToListAsync();
 
             return Ok(users);
         }
 
-        // ✅ GET SINGLE USER BY ID
-        [HttpGet("{id}")]
-        public async Task<ActionResult<UserDTO>> GetUser(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound(new { message = "User not found" });
-
-            var userDTO = new UserDTO 
-            { 
-                Id = user.Id, 
-                Name = user.Name ?? "",  
-                Email = user.Email ?? "",  
-                Role = user.Role ?? ""  
-            };
-
-            return Ok(userDTO);
-        }
-
-        // ✅ REGISTER USER + SEND WELCOME EMAIL
+        // ✅ REGISTER USER WITH EMAIL NOTIFICATION
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterUserDTO model)
+        public async Task<IActionResult> Register(RegisterUserDTO model)
         {
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
-            if (existingUser != null)
-            {
-                return BadRequest(new { message = "User already exists!" });
-            }
-
             var user = new User
             {
-                UserName = model.Email,
-                Email = model.Email,
                 Name = model.Name,
+                Email = model.Email,
+                UserName = model.Email,
                 Role = "User"
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            await _emailService.SendEmailAsync(
-                user.Email,
-                "Welcome to Our Ecommerce API",
-                "<h3>Your account has been successfully created!</h3><p>Thank you for registering.</p>"
-            );
+            // ✅ Debug: Check if this line runs
+            Console.WriteLine($"Sending email to {model.Email}...");
 
-            return Ok(new { message = "User registered successfully!" });
+            var subject = "Welcome to Ecommerce!";
+            var body = $"Hello {model.Name}, your account has been created!";
+            var emailSent = await _emailService.SendEmailAsync(model.Email, subject, body);
+
+            // ✅ Debug: Confirm if email was sent
+            Console.WriteLine(emailSent ? " Email sent successfully!" : "Email failed!");
+
+            return Ok(new { message = "User registered successfully! Email sent." });
         }
+
 
         // ✅ UPDATE USER
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDTO model)
+        public async Task<IActionResult> UpdateUser(int id, UserDTO updatedUser)
         {
             var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound(new { message = "User not found" });
+            if (user == null) return NotFound();
 
-            user.Name = model.Name ?? user.Name;
-            user.Email = model.Email ?? user.Email;
-            user.Role = model.Role ?? user.Role;
+            user.Name = updatedUser.Name;
+            user.Email = updatedUser.Email;
+            user.Role = updatedUser.Role;
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "User updated successfully!", user });
+            return NoContent();
         }
 
         // ✅ DELETE USER
@@ -109,7 +89,7 @@ namespace EcommerceAPI.Controllers
         public async Task<IActionResult> DeleteUser(int id)
         {
             var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound(new { message = $"User with ID {id} not found" });
+            if (user == null) return NotFound();
 
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
@@ -117,4 +97,3 @@ namespace EcommerceAPI.Controllers
         }
     }
 }
-

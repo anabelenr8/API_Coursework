@@ -1,15 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EcommerceAPI.Data;
-using EcommerceAPI.Models;
 using EcommerceAPI.DTOs;
+using EcommerceAPI.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace EcommerceAPI.Controllers
 {
-    [Route("api/orders")]
+    [Route("api/[controller]")]
     [ApiController]
     public class OrderController : ControllerBase
     {
@@ -33,7 +33,7 @@ namespace EcommerceAPI.Controllers
                     OrderDate = o.OrderDate,
                     TotalAmount = o.TotalAmount,
                     Status = o.Status,
-                    OrderProducts = o.OrderProducts.Select(op => new OrderProductDTO
+                    Items = o.OrderProducts.Select(op => new OrderItemDTO // ✅ FIXED: Renamed
                     {
                         ProductId = op.ProductId,
                         Quantity = op.Quantity
@@ -54,21 +54,19 @@ namespace EcommerceAPI.Controllers
 
             if (order == null) return NotFound();
 
-            var orderDTO = new OrderDTO
+            return Ok(new OrderDTO
             {
                 Id = order.Id,
                 UserId = order.UserId,
                 OrderDate = order.OrderDate,
                 TotalAmount = order.TotalAmount,
                 Status = order.Status,
-                OrderProducts = order.OrderProducts.Select(op => new OrderProductDTO
+                Items = order.OrderProducts.Select(op => new OrderItemDTO // ✅ FIXED: Renamed
                 {
                     ProductId = op.ProductId,
                     Quantity = op.Quantity
                 }).ToList()
-            };
-
-            return Ok(orderDTO);
+            });
         }
 
         // ✅ CREATE ORDER
@@ -78,7 +76,7 @@ namespace EcommerceAPI.Controllers
             var order = new Order
             {
                 UserId = orderDTO.UserId,
-                OrderProducts = orderDTO.OrderProducts.Select(op => new OrderProduct
+                OrderProducts = orderDTO.Items.Select(op => new OrderProduct // ✅ FIXED: Renamed
                 {
                     ProductId = op.ProductId,
                     Quantity = op.Quantity
@@ -102,9 +100,9 @@ namespace EcommerceAPI.Controllers
             order.TotalAmount = updatedOrderDTO.TotalAmount;
             order.Status = updatedOrderDTO.Status;
 
-            // ✅ Update Order Products
+            // ✅ Update Order Items
             order.OrderProducts.Clear();
-            foreach (var item in updatedOrderDTO.OrderProducts)
+            foreach (var item in updatedOrderDTO.Items) // ✅ FIXED: Renamed
             {
                 order.OrderProducts.Add(new OrderProduct
                 {
@@ -113,18 +111,6 @@ namespace EcommerceAPI.Controllers
                 });
             }
 
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
-
-        // ✅ DELETE ORDER
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteOrder(int id)
-        {
-            var order = await _context.Orders.FindAsync(id);
-            if (order == null) return NotFound();
-
-            _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
             return NoContent();
         }

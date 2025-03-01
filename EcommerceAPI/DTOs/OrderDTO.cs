@@ -9,5 +9,11 @@ namespace EcommerceAPI.DTOs
         public string Status { get; set; } = "Pending";
         public List<OrderItemDTO> Items { get; set; } = new();
     }
+
+    public class OrderItemDTO 
+    {
+        public int ProductId { get; set; }
+        public int Quantity { get; set; }
+    }
 }
 

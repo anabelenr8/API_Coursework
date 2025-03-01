@@ -1,8 +1,8 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using EcommerceAPI.Data;
 using EcommerceAPI.DTOs;
 using EcommerceAPI.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -37,17 +37,24 @@ namespace EcommerceAPI.Controllers
             var product = await _context.Products.FindAsync(id);
             if (product == null) return NotFound(new { message = "Product not found" });
 
-            var productDTO = new ProductDTO { Id = product.Id, Name = product.Name, Price = product.Price, Stock = product.Stock };
-            return Ok(productDTO);
+            return Ok(new ProductDTO { Id = product.Id, Name = product.Name, Price = product.Price, Stock = product.Stock });
         }
 
-        // Add a New Product
+        // ✅ ADD A NEW PRODUCT
         [HttpPost]
-        public ActionResult<Product> AddProduct(Product product)
+        public async Task<ActionResult<ProductDTO>> AddProduct(ProductDTO productDTO)
         {
+            var product = new Product
+            {
+                Name = productDTO.Name,
+                Price = productDTO.Price,
+                Stock = productDTO.Stock
+            };
+
             _context.Products.Add(product);
-            _context.SaveChanges();
-            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, productDTO);
         }
     }
 }

@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using EcommerceAPI.Data;
 using EcommerceAPI.DTOs;
 using EcommerceAPI.Models;
-using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -55,8 +55,8 @@ namespace EcommerceAPI.Controllers
             _context.Payments.Add(payment);
             await _context.SaveChangesAsync();
 
-            paymentDTO.Id = payment.Id;
             return CreatedAtAction(nameof(GetPayments), new { id = payment.Id }, paymentDTO);
         }
     }
 }
+
