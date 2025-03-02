@@ -10,4 +10,3 @@ namespace EcommerceAPI.DTOs
         public required string Status { get; set; } = string.Empty;
     }
 }
-

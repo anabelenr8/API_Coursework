@@ -16,4 +16,3 @@ namespace EcommerceAPI.DTOs
         public int Quantity { get; set; }
     }
 }
-

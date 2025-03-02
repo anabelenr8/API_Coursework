@@ -22,7 +22,6 @@ namespace EcommerceAPI.Services
         public EmailService(IOptions<EmailSettings> emailSettings)
         {
             _emailSettings = emailSettings.Value;
-            
         }
 
         public async Task<bool> SendEmailAsync(string recipientEmail, string subject, string body)
@@ -46,21 +45,19 @@ namespace EcommerceAPI.Services
 
                 mailMessage.To.Add(recipientEmail);
 
-                Console.WriteLine($"Sending email to {recipientEmail}...");
+                Console.WriteLine($"📧 Sending email to {recipientEmail}...");
                 await client.SendMailAsync(mailMessage);
-                Console.WriteLine("Email sent successfully!");
+                Console.WriteLine("✅ Email sent successfully!");
 
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Email failed: {ex.Message}");
+                Console.WriteLine($"⚠️ Email failed: {ex.Message}");
                 return false;
             }
         }
-
-
-
     }
 }
+
 
