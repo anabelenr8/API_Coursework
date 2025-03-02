@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using AspNetCoreRateLimit;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using EcommerceAPI.Data;
@@ -7,11 +8,12 @@ using EcommerceAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using EcommerceAPI.Services;
 using Microsoft.OpenApi.Models;
-using dotenv.net;
 using Microsoft.AspNetCore.Cors.Infrastructure;
-using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using System.Security.Claims;
+using dotenv.net;
+using System.Security.Cryptography.X509Certificates;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,9 +35,7 @@ var dbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION")
 var emailPassword = Environment.GetEnvironmentVariable("EMAIL_PASSWORD") 
                     ?? throw new InvalidOperationException("EMAIL_PASSWORD is missing!");
 
-// 🔍 Debugging: Print loaded secrets (Do NOT use in production)
-Console.WriteLine($"🔍 JWT_SECRET Loaded: {jwtKey}");
-Console.WriteLine($"🔍 EMAIL_PASSWORD Loaded: {emailPassword}");
+
 
 // ✅ Configure Database (SQLite)
 builder.Services.AddDbContext<EcommerceDbContext>(options =>
@@ -56,6 +56,37 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 
 // ✅ JWT Service
 builder.Services.AddScoped<IJwtService, JwtService>();
+
+// ✅ Load certificate settings from appsettings.json
+var certConfig = builder.Configuration.GetSection("Kestrel:Endpoints:HttpsInlineCertFile:Certificate");
+var certPath = certConfig["Path"] ?? throw new InvalidOperationException("Certificate path is missing!");
+var certPassword = certConfig["Password"] ?? throw new InvalidOperationException("Certificate password is missing!");
+
+// ✅ Load the certificate
+var certificate = new X509Certificate2(certPath, certPassword, 
+    X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.MachineKeySet);
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5001, listenOptions =>
+    {
+        listenOptions.UseHttps(certificate);
+    });
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100, // Allow 100 requests
+                Window = TimeSpan.FromMinutes(1) // Per 1 minute
+            }
+        ));
+});
+
 
 // ✅ Configure Identity
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
@@ -93,13 +124,6 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
-builder.Services.AddRateLimiter(_ => _
-    .AddFixedWindowLimiter(policyName: "Fixed", options =>
-    {
-        options.Window = TimeSpan.FromSeconds(10);
-        options.PermitLimit = 5;
-    })
-);
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
@@ -125,7 +149,10 @@ builder.Services.Configure<IdentityOptions>(options =>
 
 builder.Services.AddMemoryCache();
 builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.AddInMemoryRateLimiting();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
 
 // ✅ Add Swagger & JSON Formatting
 builder.Services.AddEndpointsApiExplorer();
