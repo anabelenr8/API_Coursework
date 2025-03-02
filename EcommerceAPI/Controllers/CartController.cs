@@ -1,11 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using EcommerceAPI.Data;
 using EcommerceAPI.DTOs;
-using EcommerceAPI.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using EcommerceAPI.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EcommerceAPI.Controllers
 {
@@ -13,54 +8,69 @@ namespace EcommerceAPI.Controllers
     [ApiController]
     public class CartController : ControllerBase
     {
-        private readonly EcommerceDbContext _context;
+        private readonly ICartService _cartService;
 
-        public CartController(EcommerceDbContext context)
+        public CartController(ICartService cartService)
         {
-            _context = context;
+            _cartService = cartService;
         }
 
-        // ✅ GET ALL CARTS
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CartDTO>>> GetCarts()
+        public async Task<IActionResult> GetCarts()
         {
-            var carts = await _context.Carts
-                .Include(c => c.CartItems)
-                .Select(c => new CartDTO
-                {
-                    Id = c.Id,
-                    UserId = c.UserId,
-                    Items = c.CartItems.Select(i => new CartProductDTO
-                    {
-                        ProductId = i.ProductId,
-                        Quantity = i.Quantity
-                    }).ToList()
-                })
-                .ToListAsync();
-
-            return Ok(carts);
+            try
+            {
+                var carts = await _cartService.GetCarts();
+                return Ok(carts);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
-        // ✅ GET CART BY ID
         [HttpGet("{id}")]
-        public async Task<ActionResult<CartDTO>> GetCart(int id)
+        public async Task<IActionResult> GetCart(int id)
         {
-            var cart = await _context.Carts
-                .Include(c => c.CartItems)
-                .FirstOrDefaultAsync(c => c.Id == id);
-
-            if (cart == null) return NotFound();
-
-            return Ok(new CartDTO
+            try
             {
-                Id = cart.Id,
-                UserId = cart.UserId,
-                Items = cart.CartItems.Select(i => new CartProductDTO
-                {
-                    ProductId = i.ProductId,
-                    Quantity = i.Quantity
-                }).ToList()
-            });
+                var cart = await _cartService.GetCartById(id);
+                if (cart == null) return NotFound($"Cart with ID {id} not found.");
+                return Ok(cart);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddCart([FromBody] CartDTO cartDto)
+        {
+            try
+            {
+                var newCart = await _cartService.AddCart(cartDto);
+                return CreatedAtAction(nameof(GetCart), new { id = newCart.Id }, newCart);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCart(int id)
+        {
+            try
+            {
+                var success = await _cartService.DeleteCart(id);
+                if (!success) return NotFound($"Cart with ID {id} not found.");
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
     }
 }

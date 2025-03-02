@@ -1,11 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using EcommerceAPI.Data;
 using EcommerceAPI.DTOs;
-using EcommerceAPI.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using EcommerceAPI.Services;
 
 namespace EcommerceAPI.Controllers
 {
@@ -13,106 +8,75 @@ namespace EcommerceAPI.Controllers
     [ApiController]
     public class OrderController : ControllerBase
     {
-        private readonly EcommerceDbContext _context;
+        private readonly IOrderService _orderService;
 
-        public OrderController(EcommerceDbContext context)
+        public OrderController(IOrderService orderService)
         {
-            _context = context;
+            _orderService = orderService;
         }
 
         // ✅ GET ALL ORDERS
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<OrderDTO>>> GetOrders()
+        public async Task<IActionResult> GetOrders()
         {
-            var orders = await _context.Orders
-                .Include(o => o.OrderProducts)
-                .Select(o => new OrderDTO
-                {
-                    Id = o.Id,
-                    UserId = o.UserId,
-                    OrderDate = o.OrderDate,
-                    TotalAmount = o.TotalAmount,
-                    Status = o.Status,
-                    Items = o.OrderProducts.Select(op => new OrderItemDTO // ✅ FIXED: Renamed
-                    {
-                        ProductId = op.ProductId,
-                        Quantity = op.Quantity
-                    }).ToList()
-                })
-                .ToListAsync();
-
-            return Ok(orders);
+            try
+            {
+                var orders = await _orderService.GetOrders();
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
         // ✅ GET ORDER BY ID
         [HttpGet("{id}")]
-        public async Task<ActionResult<OrderDTO>> GetOrder(int id)
+        public async Task<IActionResult> GetOrder(int id)
         {
-            var order = await _context.Orders
-                .Include(o => o.OrderProducts)
-                .FirstOrDefaultAsync(o => o.Id == id);
-
-            if (order == null) return NotFound();
-
-            return Ok(new OrderDTO
+            try
             {
-                Id = order.Id,
-                UserId = order.UserId,
-                OrderDate = order.OrderDate,
-                TotalAmount = order.TotalAmount,
-                Status = order.Status,
-                Items = order.OrderProducts.Select(op => new OrderItemDTO // ✅ FIXED: Renamed
-                {
-                    ProductId = op.ProductId,
-                    Quantity = op.Quantity
-                }).ToList()
-            });
+                var order = await _orderService.GetOrderById(id);
+                if (order == null) return NotFound($"Order with ID {id} not found.");
+                return Ok(order);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
         // ✅ CREATE ORDER
         [HttpPost]
         public async Task<IActionResult> CreateOrder(OrderDTO orderDTO)
         {
-            var order = new Order
+            try
             {
-                UserId = orderDTO.UserId,
-                OrderProducts = orderDTO.Items.Select(op => new OrderProduct // ✅ FIXED: Renamed
-                {
-                    ProductId = op.ProductId,
-                    Quantity = op.Quantity
-                }).ToList()
-            };
-
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
-            return Ok(order);
+                var createdOrder = await _orderService.CreateOrderAsync(orderDTO);
+                return CreatedAtAction(nameof(GetOrder), new { id = createdOrder.Id }, createdOrder);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
+
+
 
         // ✅ UPDATE ORDER
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateOrder(int id, OrderDTO updatedOrderDTO)
+        public async Task<IActionResult> UpdateOrder(int id, [FromBody] OrderDTO updatedOrderDTO)
         {
-            var order = await _context.Orders.Include(o => o.OrderProducts).FirstOrDefaultAsync(o => o.Id == id);
-            if (order == null) return NotFound();
-
-            order.UserId = updatedOrderDTO.UserId;
-            order.OrderDate = updatedOrderDTO.OrderDate;
-            order.TotalAmount = updatedOrderDTO.TotalAmount;
-            order.Status = updatedOrderDTO.Status;
-
-            // ✅ Update Order Items
-            order.OrderProducts.Clear();
-            foreach (var item in updatedOrderDTO.Items) // ✅ FIXED: Renamed
+            try
             {
-                order.OrderProducts.Add(new OrderProduct
-                {
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity
-                });
+                var updatedOrder = await _orderService.UpdateOrder(id, updatedOrderDTO);
+                if (updatedOrder == null) return NotFound($"Order with ID {id} not found.");
+                return NoContent();
             }
-
-            await _context.SaveChangesAsync();
-            return NoContent();
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
     }
 }

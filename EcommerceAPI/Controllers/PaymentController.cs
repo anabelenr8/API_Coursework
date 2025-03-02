@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using EcommerceAPI.Data;
 using EcommerceAPI.DTOs;
-using EcommerceAPI.Models;
+using EcommerceAPI.Services;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace EcommerceAPI.Controllers
@@ -13,49 +10,45 @@ namespace EcommerceAPI.Controllers
     [ApiController]
     public class PaymentController : ControllerBase
     {
-        private readonly EcommerceDbContext _context;
+        private readonly IPaymentService _paymentService;
+        private readonly ILogger<PaymentController> _logger;
 
-        public PaymentController(EcommerceDbContext context)
+        public PaymentController(IPaymentService paymentService, ILogger<PaymentController> logger)
         {
-            _context = context;
+            _paymentService = paymentService;
+            _logger = logger;
         }
 
         // ✅ GET ALL PAYMENTS
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PaymentDTO>>> GetPayments()
         {
-            var payments = await _context.Payments
-                .Select(p => new PaymentDTO
-                {
-                    Id = p.Id,
-                    UserId = p.UserId,
-                    OrderId = p.OrderId,
-                    Amount = p.Amount,
-                    PaymentMethod = p.PaymentMethod,
-                    Status = p.Status
-                })
-                .ToListAsync();
-
-            return Ok(payments);
+            try
+            {
+                var payments = await _paymentService.GetPayments();
+                return Ok(payments);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error fetching payments: {ex.Message}");
+                return StatusCode(500, "Internal Server Error");
+            }
         }
 
         // ✅ ADD PAYMENT
         [HttpPost]
         public async Task<ActionResult<PaymentDTO>> AddPayment(PaymentDTO paymentDTO)
         {
-            var payment = new Payment
+            try
             {
-                UserId = paymentDTO.UserId,
-                OrderId = paymentDTO.OrderId,
-                Amount = paymentDTO.Amount,
-                PaymentMethod = paymentDTO.PaymentMethod,
-                Status = paymentDTO.Status
-            };
-
-            _context.Payments.Add(payment);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetPayments), new { id = payment.Id }, paymentDTO);
+                var newPayment = await _paymentService.AddPayment(paymentDTO);
+                return CreatedAtAction(nameof(GetPayments), new { id = newPayment.Id }, paymentDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error adding payment: {ex.Message}");
+                return StatusCode(500, "Internal Server Error");
+            }
         }
     }
 }

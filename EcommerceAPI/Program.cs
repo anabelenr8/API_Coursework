@@ -43,9 +43,19 @@ builder.Services.AddDbContext<EcommerceDbContext>(options =>
 
 // ✅ Register Services
 builder.Services.AddScoped<IOrderProductService, OrderProductService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+// ✅ Email Service
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IJwtService, JwtService>(); // ✅ Refresh Token Support
+
+// ✅ JWT Service
+builder.Services.AddScoped<IJwtService, JwtService>();
 
 // ✅ Configure Identity
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
@@ -90,6 +100,32 @@ builder.Services.AddRateLimiter(_ => _
         options.PermitLimit = 5;
     })
 );
+
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+        policy =>
+        {
+            policy.WithOrigins("https://yourfrontend.com") // Only allow your frontend
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 8;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireLowercase = true;
+});
+
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
 // ✅ Add Swagger & JSON Formatting
 builder.Services.AddEndpointsApiExplorer();
@@ -138,6 +174,10 @@ app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseRateLimiter();
 app.UseAuthentication();
-
+app.UseAuthorization();
 app.MapControllers();
+app.UseCors(MyAllowSpecificOrigins);
+app.UseIpRateLimiting();
+
+
 app.Run();

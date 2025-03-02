@@ -13,5 +13,6 @@ namespace EcommerceAPI.Models
         public List<Order> Orders { get; set; } = new List<Order>();
 
         public override string? Email { get; set; } = string.Empty;
+
     }
 }

@@ -1,10 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using EcommerceAPI.Data;
+using EcommerceAPI.Services;
 using EcommerceAPI.DTOs;
-using EcommerceAPI.Models;
+using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace EcommerceAPI.Controllers
@@ -13,48 +11,86 @@ namespace EcommerceAPI.Controllers
     [ApiController]
     public class ProductController : ControllerBase
     {
-        private readonly EcommerceDbContext _context;
+        private readonly IProductService _productService;
 
-        public ProductController(EcommerceDbContext context)
+        public ProductController(IProductService productService)
         {
-            _context = context;
+            _productService = productService;
         }
 
-        // ✅ GET ALL PRODUCTS
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProductDTO>>> GetProducts()
+        public async Task<IActionResult> GetProducts()
         {
-            var products = await _context.Products
-                .Select(p => new ProductDTO { Id = p.Id, Name = p.Name, Price = p.Price, Stock = p.Stock })
-                .ToListAsync();
-            return Ok(products);
-        }
-
-        // ✅ GET PRODUCT BY ID
-        [HttpGet("{id}")]
-        public async Task<ActionResult<ProductDTO>> GetProduct(int id)
-        {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null) return NotFound(new { message = "Product not found" });
-
-            return Ok(new ProductDTO { Id = product.Id, Name = product.Name, Price = product.Price, Stock = product.Stock });
-        }
-
-        // ✅ ADD A NEW PRODUCT
-        [HttpPost]
-        public async Task<ActionResult<ProductDTO>> AddProduct(ProductDTO productDTO)
-        {
-            var product = new Product
+            try
             {
-                Name = productDTO.Name,
-                Price = productDTO.Price,
-                Stock = productDTO.Stock
-            };
+                var products = await _productService.GetProducts();
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error retrieving products", error = ex.Message });
+            }
+        }
 
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetProduct(int id)
+        {
+            try
+            {
+                var product = await _productService.GetProductById(id);
+                if (product == null) return NotFound(new { message = "Product not found" });
 
-            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, productDTO);
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error retrieving product", error = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddProduct([FromBody] ProductDTO productDTO)
+        {
+            try
+            {
+                await _productService.AddProduct(productDTO);
+                return CreatedAtAction(nameof(GetProduct), new { id = productDTO.Id }, productDTO);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error adding product", error = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductDTO productDTO)
+        {
+            try
+            {
+                if (id != productDTO.Id)
+                    return BadRequest(new { message = "ID mismatch" });
+
+                await _productService.UpdateProduct(productDTO);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error updating product", error = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProduct(int id)
+        {
+            try
+            {
+                await _productService.DeleteProduct(id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error deleting product", error = ex.Message });
+            }
         }
     }
 }
