@@ -17,10 +17,11 @@ using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var certPath = builder.Configuration["CERTIFICATE_PATH"];
-if (!File.Exists(certPath))
+string? certPath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH");
+
+if (string.IsNullOrEmpty(certPath))
 {
-    throw new FileNotFoundException($"Certificate file not found at path: {certPath}");
+    throw new Exception("CERTIFICATE_PATH environment variable is not set.");
 }
 var certPassword = builder.Configuration["CERTIFICATE_PASSWORD"];
 var certificate = X509CertificateLoader.LoadPkcs12FromFile(certPath, certPassword);
