@@ -15,7 +15,7 @@ namespace EcommerceAPI.Controllers
             _orderService = orderService;
         }
 
-        // ✅ GET ALL ORDERS
+        // GET ALL ORDERS
         [HttpGet]
         public async Task<IActionResult> GetOrders()
         {
@@ -30,7 +30,7 @@ namespace EcommerceAPI.Controllers
             }
         }
 
-        // ✅ GET ORDER BY ID
+        // GET ORDER BY ID
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrder(int id)
         {
@@ -46,7 +46,7 @@ namespace EcommerceAPI.Controllers
             }
         }
 
-        // ✅ CREATE ORDER
+        // CREATE ORDER
         [HttpPost]
         public async Task<IActionResult> CreateOrder(OrderDTO orderDTO)
         {
@@ -63,7 +63,7 @@ namespace EcommerceAPI.Controllers
 
 
 
-        // ✅ UPDATE ORDER
+        // UPDATE ORDER
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateOrder(int id, [FromBody] OrderDTO updatedOrderDTO)
         {

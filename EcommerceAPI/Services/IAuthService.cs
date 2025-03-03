@@ -7,6 +7,6 @@ namespace EcommerceAPI.Services
     public interface IAuthService
     {
         Task<string?> LoginAsync(LoginModel loginModel);
-        Task<bool> RegisterUserAsync(RegisterUserDTO model);
+        Task<bool> RegisterUserAsync(RegisterUserDTO model, string requestingUserRole);
     }
 }

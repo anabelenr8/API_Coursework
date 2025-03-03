@@ -23,26 +23,26 @@ namespace EcommerceAPI.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // ✅ User → Orders (One-to-Many)
+            // User → Orders (One-to-Many)
             modelBuilder.Entity<User>()
                 .HasMany(u => u.Orders)
                 .WithOne(o => o.User)
                 .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // ✅ Order ↔ Product (Many-to-Many via OrderProduct)
+            // Order ↔ Product (Many-to-Many via OrderProduct)
             modelBuilder.Entity<OrderProduct>()
                 .HasKey(op => new { op.OrderId, op.ProductId });
 
             modelBuilder.Entity<OrderProduct>()
                 .HasOne(op => op.Order)
-                .WithMany(o => o.OrderProducts)  // ✅ Ensure OrderProducts is used
+                .WithMany(o => o.OrderProducts)  // Ensure OrderProducts is used
                 .HasForeignKey(op => op.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<OrderProduct>()
                 .HasOne(op => op.Product)
-                .WithMany(p => p.OrderProducts) // ✅ Ensure Product has OrderProducts
+                .WithMany(p => p.OrderProducts) // Ensure Product has OrderProducts
                 .HasForeignKey(op => op.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
         }

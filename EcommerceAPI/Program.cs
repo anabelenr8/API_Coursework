@@ -17,14 +17,32 @@ using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ✅ Load Configuration
+var certPath = builder.Configuration["CERTIFICATE_PATH"];
+if (!File.Exists(certPath))
+{
+    throw new FileNotFoundException($"Certificate file not found at path: {certPath}");
+}
+var certPassword = builder.Configuration["CERTIFICATE_PASSWORD"];
+var certificate = X509CertificateLoader.LoadPkcs12FromFile(certPath, certPassword);
+
+
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5001, listenOptions =>
+    {
+        listenOptions.UseHttps(certificate);
+    });
+});
+
+// Load Configuration
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true);
 
-// ✅ Load Environment Variables
+// Load Environment Variables
 DotEnv.Load();
 
-// ✅ Secure Sensitive Data Using Environment Variables
+// Secure Sensitive Data Using Environment Variables
 var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET") 
              ?? throw new InvalidOperationException("JWT_SECRET is missing!");
 
@@ -37,11 +55,11 @@ var emailPassword = Environment.GetEnvironmentVariable("EMAIL_PASSWORD")
 
 
 
-// ✅ Configure Database (SQLite)
+// Configure Database (SQLite)
 builder.Services.AddDbContext<EcommerceDbContext>(options =>
     options.UseSqlite(dbConnectionString));
 
-// ✅ Register Services
+// Register Services
 builder.Services.AddScoped<IOrderProductService, OrderProductService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService, CartService>();
@@ -50,29 +68,12 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// ✅ Email Service
+// Email Service
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-// ✅ JWT Service
+// JWT Service
 builder.Services.AddScoped<IJwtService, JwtService>();
-
-// ✅ Load certificate settings from appsettings.json
-var certConfig = builder.Configuration.GetSection("Kestrel:Endpoints:HttpsInlineCertFile:Certificate");
-var certPath = certConfig["Path"] ?? throw new InvalidOperationException("Certificate path is missing!");
-var certPassword = certConfig["Password"] ?? throw new InvalidOperationException("Certificate password is missing!");
-
-// ✅ Load the certificate
-var certificate = new X509Certificate2(certPath, certPassword, 
-    X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.MachineKeySet);
-
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(5001, listenOptions =>
-    {
-        listenOptions.UseHttps(certificate);
-    });
-});
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -88,7 +89,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 
-// ✅ Configure Identity
+// Configure Identity
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 {
     options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_@.";
@@ -97,7 +98,7 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 .AddEntityFrameworkStores<EcommerceDbContext>()
 .AddDefaultTokenProviders();
 
-// ✅ Configure Authentication (JWT Only)
+// Configure Authentication (JWT Only)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -117,7 +118,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// ✅ Add Middleware & Security Features
+// Add Middleware & Security Features
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -154,8 +155,10 @@ builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>()
 builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
 builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
 
-// ✅ Add Swagger & JSON Formatting
+// Add Swagger & JSON Formatting
 builder.Services.AddEndpointsApiExplorer();
+
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -194,7 +197,6 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// ✅ Apply Middleware
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();

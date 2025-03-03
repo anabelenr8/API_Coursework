@@ -67,33 +67,47 @@ namespace EcommerceAPI.Services
             }
         }
 
-
-        public async Task<bool> RegisterUserAsync(RegisterUserDTO model)
+        public async Task<bool> RegisterUserAsync(RegisterUserDTO model, string requestingUserRole)
         {
             try
             {
+                // Prevent non-admin users from creating admin accounts
+                if (model.Role == "Admin" && requestingUserRole != "Admin")
+                {
+                    _logger.LogWarning("❌ Unauthorized role assignment attempt!");
+                    return false;
+                }
+
                 var user = new User
                 {
                     Name = model.Name,
                     Email = model.Email,
                     UserName = model.Email,
-                    Role = "User"
+                    Role = model.Role ?? "User"  // Default to "User" if no role is provided
                 };
 
                 var result = await _userManager.CreateAsync(user, model.Password);
-                if (!result.Succeeded) return false;
+                if (!result.Succeeded)
+                {
+                    _logger.LogWarning("❌ User creation failed for {Email}", model.Email);
+                    return false;
+                }
 
+                // Send confirmation email
                 var subject = "Welcome to Ecommerce!";
                 var body = $"Hello {model.Name}, your account has been successfully created.";
                 await _emailService.SendEmailAsync(model.Email, subject, body);
 
+                _logger.LogInformation("✅ User {Email} registered successfully with role {Role}", model.Email, user.Role);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during registration");
+                _logger.LogError(ex, "❌ Error during registration for {Email}", model.Email);
                 return false;
             }
         }
+
+
     }
 }

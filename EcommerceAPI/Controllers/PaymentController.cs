@@ -19,7 +19,7 @@ namespace EcommerceAPI.Controllers
             _logger = logger;
         }
 
-        // ✅ GET ALL PAYMENTS
+        // GET ALL PAYMENTS
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PaymentDTO>>> GetPayments()
         {
@@ -35,7 +35,7 @@ namespace EcommerceAPI.Controllers
             }
         }
 
-        // ✅ ADD PAYMENT
+        // ADD PAYMENT
         [HttpPost]
         public async Task<ActionResult<PaymentDTO>> AddPayment(PaymentDTO paymentDTO)
         {

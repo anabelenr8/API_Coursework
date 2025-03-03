@@ -8,9 +8,8 @@ namespace EcommerceAPI.Models
         public decimal TotalAmount { get; set; }
         public string Status { get; set; } = "Pending";
 
-        // ✅ Navigation Properties
         public User? User { get; set; }  
-        public List<OrderProduct> OrderProducts { get; set; } = new();  // ✅ Fixes OrderItems error
+        public List<OrderProduct> OrderProducts { get; set; } = new(); 
     }
 }
 

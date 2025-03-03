@@ -14,7 +14,7 @@ public class OrderProductController : ControllerBase
         _context = context;
     }
 
-    // ✅ Add a Product to an Order
+    // Add a Product to an Order
     [HttpPost]
     public ActionResult<OrderProduct> AddProductToOrder(OrderProduct orderProduct)
     {
@@ -26,7 +26,7 @@ public class OrderProductController : ControllerBase
             return BadRequest(new { message = "Invalid OrderId or ProductId." });
         }
 
-        // ✅ Correct way: Only set OrderId & ProductId, no full Order/Product objects
+        // Correct way: Only set OrderId & ProductId, no full Order/Product objects
         var newOrderProduct = new OrderProduct
         {
             OrderId = orderProduct.OrderId,
@@ -42,7 +42,7 @@ public class OrderProductController : ControllerBase
 
 
 
-    // ✅ Get All Products in an Order
+    // Get All Products in an Order
     [HttpGet("order/{orderId}")]
     public ActionResult<IEnumerable<OrderProduct>> GetProductsInOrder(int orderId)
     {

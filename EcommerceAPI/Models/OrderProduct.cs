@@ -16,7 +16,7 @@ namespace EcommerceAPI.Models
 
         public int Quantity { get; set; }
 
-        public decimal Price { get; set; } // ✅ Add this if missing
+        public decimal Price { get; set; } 
 
         public Order? Order { get; set; }
         public Product? Product { get; set; }
