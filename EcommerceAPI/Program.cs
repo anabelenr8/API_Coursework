@@ -14,7 +14,6 @@ using System.Security.Claims;
 using dotenv.net;
 using System.Security.Cryptography.X509Certificates;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 string? certPath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH");
@@ -27,9 +26,9 @@ var certPassword = builder.Configuration["CERTIFICATE_PASSWORD"];
 var certificate = X509CertificateLoader.LoadPkcs12FromFile(certPath, certPassword);
 
 
-
 builder.WebHost.ConfigureKestrel(options =>
 {
+
     options.ListenAnyIP(5001, listenOptions =>
     {
         listenOptions.UseHttps(certificate);
