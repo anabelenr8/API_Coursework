@@ -1,7 +1,7 @@
 using EcommerceAPI.DTOs;
 using EcommerceAPI.Services;
 using Microsoft.AspNetCore.Mvc;
-
+ lock
 namespace EcommerceAPI.Controllers
 {
     [Route("api/[controller]")]
