@@ -11,13 +11,14 @@ namespace EcommerceAPI.Controllers
     [ApiController]
     public class ProductController : ControllerBase
     {
-        private readonly IProductService _productService;
+        private readonly ProductService _productService;
 
-        public ProductController(IProductService productService)
+        public ProductController(ProductService productService)
         {
             _productService = productService;
         }
 
+        // GET ALL PRODUCTS
         [HttpGet]
         public async Task<IActionResult> GetProducts()
         {
@@ -32,6 +33,7 @@ namespace EcommerceAPI.Controllers
             }
         }
 
+        // GET PRODUCT BY ID
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProduct(int id)
         {
@@ -48,13 +50,14 @@ namespace EcommerceAPI.Controllers
             }
         }
 
+        // ADD PRODUCT
         [HttpPost]
         public async Task<IActionResult> AddProduct([FromBody] ProductDTO productDTO)
         {
             try
             {
-                await _productService.AddProduct(productDTO);
-                return CreatedAtAction(nameof(GetProduct), new { id = productDTO.Id }, productDTO);
+                var newProduct = await _productService.AddProduct(productDTO);
+                return CreatedAtAction(nameof(GetProduct), new { id = newProduct.Id }, newProduct);
             }
             catch (Exception ex)
             {
@@ -62,15 +65,15 @@ namespace EcommerceAPI.Controllers
             }
         }
 
+        // UPDATE PRODUCT
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductDTO productDTO)
         {
             try
             {
-                if (id != productDTO.Id)
-                    return BadRequest(new { message = "ID mismatch" });
+                var success = await _productService.UpdateProduct(id, productDTO);
+                if (!success) return NotFound(new { message = "Product not found" });
 
-                await _productService.UpdateProduct(productDTO);
                 return NoContent();
             }
             catch (Exception ex)
@@ -79,12 +82,15 @@ namespace EcommerceAPI.Controllers
             }
         }
 
+        // DELETE PRODUCT
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             try
             {
-                await _productService.DeleteProduct(id);
+                var success = await _productService.DeleteProduct(id);
+                if (!success) return NotFound(new { message = "Product not found" });
+
                 return NoContent();
             }
             catch (Exception ex)
@@ -94,3 +100,4 @@ namespace EcommerceAPI.Controllers
         }
     }
 }
+

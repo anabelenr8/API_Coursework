@@ -15,8 +15,8 @@ namespace EcommerceAPI.Services
             _context = context;
             _logger = logger;
         }
-       
-        // ✅ GET ALL PAYMENTS
+
+        // GET ALL PAYMENTS
         public async Task<IEnumerable<PaymentDTO>> GetPayments()
         {
             try
@@ -24,7 +24,6 @@ namespace EcommerceAPI.Services
                 var payments = await _context.Payments.ToListAsync();
                 return payments.Select(p => new PaymentDTO
                 {
-                    Id = p.Id,
                     UserId = p.UserId,
                     OrderId = p.OrderId,
                     Amount = p.Amount,
@@ -39,11 +38,18 @@ namespace EcommerceAPI.Services
             }
         }
 
-        // ✅ CREATE PAYMENT
+        // CREATE PAYMENT
         public async Task<Payment> AddPayment(PaymentDTO paymentDTO)
         {
             try
             {
+                // Validate that the order exists before creating a payment
+                var orderExists = await _context.Orders.AnyAsync(o => o.Id == paymentDTO.OrderId);
+                if (!orderExists)
+                {
+                    throw new Exception("Order does not exist.");
+                }
+
                 var payment = new Payment
                 {
                     UserId = paymentDTO.UserId,

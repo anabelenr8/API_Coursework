@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace EcommerceAPI.Models
 {
-    public class User : IdentityUser<int> 
+    public class User : IdentityUser 
     {
         public string Name { get; set; } = string.Empty;
 

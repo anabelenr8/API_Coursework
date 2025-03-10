@@ -10,5 +10,6 @@ namespace EcommerceAPI.Services
         Task<OrderDTO> CreateOrderAsync(OrderDTO order);
         Task<Order> CreateOrder(OrderDTO orderDTO);
         Task<Order?> UpdateOrder(int id, OrderDTO updatedOrderDTO);
+        Task<OrderProduct?> AddProductToOrder(OrderProduct orderProduct);
     }
 }

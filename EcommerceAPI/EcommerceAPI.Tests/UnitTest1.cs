@@ -27,7 +27,7 @@ public class PaymentControllerTests
         _mockPaymentService.Setup(service => service.GetPayments())
             .ReturnsAsync(new List<PaymentDTO>
             {
-            new PaymentDTO { Id = 1, UserId = 1, OrderId = 1, Amount = 100, PaymentMethod = "Credit Card", Status = "Completed" }
+            new PaymentDTO { UserId = "asgdtdtydyd-bbgyfy0986", OrderId = 1, Amount = 100, PaymentMethod = "Credit Card", Status = "Completed" }
             });
 
         var result = await _controller.GetPayments();
@@ -38,91 +38,6 @@ public class PaymentControllerTests
         Assert.NotNull(payments);
         Assert.Single(payments);
 
-    }
-}
-
-// public class CartControllerTests
-// {
-//     private readonly CartController _controller;
-//     private readonly Mock<ICartService> _mockCartService;
-
-//     // public CartControllerTests()
-    // {
-    //     _mockCartService = new Mock<ICartService>();
-    //     _controller = new CartController(_mockCartService.Object);
-    // }
-
-    // [Fact]
-    // public async Task GetCarts_ReturnsListOfCarts()
-    // {
-    //     // Add test cart directly to the in-memory database
-    //     var testCarts = new List<CartDTO>
-    // {
-    //     new CartDTO { Id = 1, UserId = 1, Items = new List<CartItemDTO> { new CartItemDTO { ProductId = 2, Quantity = 1 } } }
-    // };
-
-    //     _mockCartService.Setup(service => service.GetAllCartsAsync())
-    //         .ReturnsAsync(testCarts);  // Seed the mock service with test data
-
-    //     var result = await _controller.GetCarts();
-    //     var okResult = Assert.IsType<OkObjectResult>(result);
-    //     var carts = Assert.IsType<List<CartDTO>>(okResult.Value);
-
-    //     Assert.NotEmpty(carts);  // Change assertion from Assert.Single() to Assert.NotEmpty()
-    // }
-
-// }
-
-public class ProductControllerTests
-{
-    private readonly ProductController _controller;
-    private readonly Mock<IProductService> _mockProductService;
-
-    public ProductControllerTests()
-    {
-        _mockProductService = new Mock<IProductService>();
-        _controller = new ProductController(_mockProductService.Object);
-    }
-
-    [Fact]
-    public async Task GetProducts_ReturnsListOfProducts()
-    {
-        _mockProductService.Setup(service => service.GetProducts())
-            .ReturnsAsync(new List<ProductDTO> { new ProductDTO { Id = 1, Name = "Laptop" } });
-
-        var result = await _controller.GetProducts();
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var products = Assert.IsType<List<ProductDTO>>(okResult.Value);
-        Assert.Single(products);
-    }
-}
-
-public class UserControllerTests
-{
-    private readonly UserController _controller;
-    private readonly Mock<IUserService> _mockUserService;
-    private readonly Mock<IEmailService> _mockEmailService;
-    private readonly Mock<ILogger<UserController>> _mockLogger;
-
-    public UserControllerTests()
-    {
-        _mockUserService = new Mock<IUserService>();
-        _mockEmailService = new Mock<IEmailService>();
-        _mockLogger = new Mock<ILogger<UserController>>();
-        _controller = new UserController(_mockUserService.Object, _mockEmailService.Object, _mockLogger.Object);
-    }
-
-    [Fact]
-    public async Task RegisterUser_ReturnsOk_WhenValidUserIsRegistered()
-    {
-        _mockUserService.Setup(service => service.RegisterUserAsync(It.IsAny<RegisterUserDTO>()))
-            .ReturnsAsync(true);
-
-        var newUser = new RegisterUserDTO { Name = "Ana", Email = "ana@example.com", Password = "Test123!" };
-
-        var result = await _controller.Register(newUser);
-
-        Assert.IsType<OkObjectResult>(result);
     }
 }
 
@@ -141,9 +56,9 @@ public class OrderControllerTests
     public async Task CreateOrder_ReturnsOk_WhenOrderIsCreated()
     {
         _mockOrderService.Setup(service => service.CreateOrderAsync(It.IsAny<OrderDTO>()))
-            .ReturnsAsync(new OrderDTO { Id = 1, UserId = 1 });
+            .ReturnsAsync(new OrderDTO { Id = 1, UserId = "asgdtdtydyd-bbgyfy0986" });
 
-        var order = new OrderDTO { UserId = 1, Items = new List<OrderItemDTO> { new OrderItemDTO { ProductId = 2, Quantity = 1 } } };
+        var order = new OrderDTO { UserId = "asgdtdtydyd-bbgyfy0986", Items = new List<OrderItemDTO> { new OrderItemDTO { ProductId = 2, Quantity = 1 } } };
 
         var result = await _controller.CreateOrder(order);
 

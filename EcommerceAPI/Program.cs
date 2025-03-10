@@ -12,28 +12,9 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using System.Threading.RateLimiting;
 using System.Security.Claims;
 using dotenv.net;
-using System.Security.Cryptography.X509Certificates;
+using EcommerceAPI.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
-
-string? certPath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH");
-
-if (string.IsNullOrEmpty(certPath))
-{
-    throw new Exception("CERTIFICATE_PATH environment variable is not set.");
-}
-var certPassword = builder.Configuration["CERTIFICATE_PASSWORD"];
-var certificate = X509CertificateLoader.LoadPkcs12FromFile(certPath, certPassword);
-
-
-builder.WebHost.ConfigureKestrel(options =>
-{
-
-    options.ListenAnyIP(5001, listenOptions =>
-    {
-        listenOptions.UseHttps(certificate);
-    });
-});
 
 // Load Configuration
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
@@ -42,38 +23,24 @@ builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.Environment
 // Load Environment Variables
 DotEnv.Load();
 
-// Secure Sensitive Data Using Environment Variables
-var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET") 
-             ?? throw new InvalidOperationException("JWT_SECRET is missing!");
-
-var dbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION") 
-                         ?? builder.Configuration.GetConnectionString("DefaultConnection")
-                         ?? throw new InvalidOperationException("Database connection string is missing!");
-
-var emailPassword = Environment.GetEnvironmentVariable("EMAIL_PASSWORD") 
-                    ?? throw new InvalidOperationException("EMAIL_PASSWORD is missing!");
-
-
 
 // Configure Database (SQLite)
 builder.Services.AddDbContext<EcommerceDbContext>(options =>
-    options.UseSqlite(dbConnectionString));
+    options.UseSqlite(builder.Configuration.GetConnectionString("Connection")));
 
 // Register Services
-builder.Services.AddScoped<IOrderProductService, OrderProductService>();
-builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IOrderProductService, OrderProductService>();
+
+
 
 // Email Service
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddScoped<IEmailService, EmailService>();
-
-// JWT Service
-builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<EmailService>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -88,35 +55,45 @@ builder.Services.AddRateLimiter(options =>
         ));
 });
 
+// permit limit, minuts appsetings.json
+
 
 // Configure Identity
-builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
+builder.Services.AddIdentity<User, IdentityRole>(options => 
 {
     options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_@.";
     options.User.RequireUniqueEmail = true;
 })
+.AddRoles<IdentityRole>()  
 .AddEntityFrameworkStores<EcommerceDbContext>()
 .AddDefaultTokenProviders();
 
-// Configure Authentication (JWT Only)
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+// Configure Authentication & JWT Bearer Token
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    var secretKey = builder.Configuration["Jwt:Key"];
+    if (string.IsNullOrEmpty(secretKey))
     {
-        options.RequireHttpsMetadata = false;
-        options.SaveToken = true;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-            ValidAudience = builder.Configuration["JwtSettings:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"] ?? "DEFAULT_SECRET_KEY")
-            )
-        };
-    });
+        throw new Exception("JWT Key is missing in appsettings.json!");
+    }
+
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Issuer"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+    };
+});
+
 
 // Add Middleware & Security Features
 builder.Services.AddCors(options =>
@@ -126,18 +103,6 @@ builder.Services.AddCors(options =>
 });
 
 
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-        policy =>
-        {
-            policy.WithOrigins("https://yourfrontend.com") // Only allow your frontend
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
-});
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -205,8 +170,6 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseCors(MyAllowSpecificOrigins);
 app.UseIpRateLimiting();
-
 
 app.Run();

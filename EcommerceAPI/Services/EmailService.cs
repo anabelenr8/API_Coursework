@@ -1,63 +1,34 @@
-using System;
-using System.Net;
-using System.Net.Mail;
-using System.Threading.Tasks;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
 using Microsoft.Extensions.Options;
 
-namespace EcommerceAPI.Services
+public class EmailService
 {
-    public class EmailSettings
+    private readonly EmailSettings _emailSettings;
+    public EmailService(IOptions<EmailSettings> emailSettings)
     {
-        public string SmtpServer { get; set; } = string.Empty;
-        public int SmtpPort { get; set; }
-        public string SenderEmail { get; set; } = string.Empty;
-        public string SenderName { get; set; } = string.Empty;
-        public string SenderPassword { get; set; } = string.Empty;
+        _emailSettings = emailSettings.Value;
     }
-
-    public class EmailService : IEmailService
+    public void SendEmail(string toEmail, string subject, string body)
     {
-        private readonly EmailSettings _emailSettings;
-
-        public EmailService(IOptions<EmailSettings> emailSettings)
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("Ecommerce API", _emailSettings.SmtpUsername));
+        message.To.Add(new MailboxAddress("Reciever Name", toEmail));
+        message.Subject = subject;
+        var textPart = new TextPart("plain")
         {
-            _emailSettings = emailSettings.Value;
-        }
-
-        public async Task<bool> SendEmailAsync(string recipientEmail, string subject, string body)
+            Text = body
+        };
+        message.Body = textPart;
+        using (var client = new SmtpClient())
         {
-            try
-            {
-                using var client = new SmtpClient(_emailSettings.SmtpServer)
-                {
-                    Port = _emailSettings.SmtpPort,
-                    Credentials = new NetworkCredential(_emailSettings.SenderEmail, _emailSettings.SenderPassword),
-                    EnableSsl = true
-                };
-
-                var mailMessage = new MailMessage
-                {
-                    From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName),
-                    Subject = subject,
-                    Body = body,
-                    IsBodyHtml = true
-                };
-
-                mailMessage.To.Add(recipientEmail);
-
-                Console.WriteLine($"📧 Sending email to {recipientEmail}...");
-                await client.SendMailAsync(mailMessage);
-                Console.WriteLine("✅ Email sent successfully!");
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⚠️ Email failed: {ex.Message}");
-                return false;
-            }
+            client.Connect(_emailSettings.SmtpServer, _emailSettings.SmtpPort,
+            SecureSocketOptions.StartTls);
+            client.Authenticate(_emailSettings.SmtpUsername, _emailSettings.SmtpPassword);
+            client.Send(message);
+            client.Disconnect(true);
         }
     }
 }
-
 

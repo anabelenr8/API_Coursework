@@ -13,13 +13,11 @@ namespace EcommerceAPI.Services
     public class UserService : IUserService
     {
         private readonly EcommerceDbContext _context;
-        private readonly IEmailService _emailService;
         private readonly ILogger<UserService> _logger;
 
-        public UserService(EcommerceDbContext context, IEmailService emailService, ILogger<UserService> logger)
+        public UserService(EcommerceDbContext context, ILogger<UserService> logger)
         {
             _context = context;
-            _emailService = emailService;
             _logger = logger;
         }
 
@@ -45,40 +43,7 @@ namespace EcommerceAPI.Services
             }
         }
 
-        public async Task<bool> RegisterUserAsync(RegisterUserDTO model)
-        {
-            try
-            {
-                _logger.LogInformation($"Registering user: {model.Email}");
-
-                var user = new User
-                {
-                    Name = model.Name,
-                    Email = model.Email,
-                    UserName = model.Email,
-                    Role = "User"
-                };
-
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-
-                // Send Welcome Email
-                var subject = "Welcome to Ecommerce!";
-                var body = $"Hello {model.Name}, your account has been successfully created.";
-                var emailSent = await _emailService.SendEmailAsync(model.Email, subject, body);
-
-                _logger.LogInformation(emailSent ? $"✅ Email sent to {model.Email}" : $"⚠️ Email sending failed for {model.Email}");
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while registering the user.");
-                return false;
-            }
-        }
-
-        public async Task<bool> UpdateUserAsync(int id, UserDTO updatedUser)
+        public async Task<bool> UpdateUserAsync(string id, UserDTO updatedUser)
         {
             try
             {
@@ -101,7 +66,7 @@ namespace EcommerceAPI.Services
             }
         }
 
-        public async Task<bool> DeleteUserAsync(int id)
+        public async Task<bool> DeleteUserAsync(string id)
         {
             try
             {

@@ -8,6 +8,7 @@ namespace EcommerceAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    
     public class PaymentController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
@@ -42,12 +43,12 @@ namespace EcommerceAPI.Controllers
             try
             {
                 var newPayment = await _paymentService.AddPayment(paymentDTO);
-                return CreatedAtAction(nameof(GetPayments), new { id = newPayment.Id }, paymentDTO);
+                return CreatedAtAction(nameof(GetPayments), new { id = newPayment.Id }, newPayment);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error adding payment: {ex.Message}");
-                return StatusCode(500, "Internal Server Error");
+                return BadRequest($"Error processing payment: {ex.Message}");
             }
         }
     }

@@ -1,58 +1,61 @@
 using Microsoft.AspNetCore.Mvc;
-using EcommerceAPI.Data;
-using EcommerceAPI.Models;
-using Microsoft.EntityFrameworkCore;
+using EcommerceAPI.Services;
+using EcommerceAPI.DTOs;
+using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-[Route("api/orderproducts")]
-[ApiController]
-public class OrderProductController : ControllerBase
+namespace EcommerceAPI.Controllers
 {
-    private readonly EcommerceDbContext _context;
-
-    public OrderProductController(EcommerceDbContext context)
+    [Route("api/orderproducts")]
+    [ApiController]
+    public class OrderProductController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly IOrderProductService _orderProductService;
+        private readonly ILogger<OrderProductController> _logger;
 
-    // Add a Product to an Order
-    [HttpPost]
-    public ActionResult<OrderProduct> AddProductToOrder(OrderProduct orderProduct)
-    {
-        var existingOrder = _context.Orders.AsNoTracking().FirstOrDefault(o => o.Id == orderProduct.OrderId);
-        var existingProduct = _context.Products.AsNoTracking().FirstOrDefault(p => p.Id == orderProduct.ProductId);
-
-        if (existingOrder == null || existingProduct == null)
+        public OrderProductController(IOrderProductService orderProductService, ILogger<OrderProductController> logger)
         {
-            return BadRequest(new { message = "Invalid OrderId or ProductId." });
+            _orderProductService = orderProductService;
+            _logger = logger;
         }
 
-        // Correct way: Only set OrderId & ProductId, no full Order/Product objects
-        var newOrderProduct = new OrderProduct
+        // Add a Product to an Order
+        [HttpPost]
+        public async Task<ActionResult> AddProductToOrder([FromBody] OrderProductDTO orderProductDTO)
         {
-            OrderId = orderProduct.OrderId,
-            ProductId = orderProduct.ProductId,
-            Quantity = orderProduct.Quantity
-        };
+            try
+            {
+                var newOrderProduct = await _orderProductService.AddProductToOrder(orderProductDTO);
+                if (newOrderProduct == null)
+                    return BadRequest(new { message = "Invalid OrderId or ProductId." });
 
-        _context.OrderProducts.Add(newOrderProduct);
-        _context.SaveChanges();
+                return Ok(new { message = "Product added to order successfully!" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error adding product to order: {ex.Message}");
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
 
-        return Ok(new { message = "Product added to order successfully!" });
-    }
+        // Get All Products in an Order
+        [HttpGet("order/{orderId}")]
+        public async Task<ActionResult<IEnumerable<OrderProductDTO>>> GetProductsInOrder(int orderId)
+        {
+            try
+            {
+                var orderProducts = await _orderProductService.GetProductsInOrder(orderId);
+                if (orderProducts == null || !orderProducts.Any())
+                    return NotFound(new { message = "No products found for this order" });
 
-
-
-    // Get All Products in an Order
-    [HttpGet("order/{orderId}")]
-    public ActionResult<IEnumerable<OrderProduct>> GetProductsInOrder(int orderId)
-    {
-        var orderProducts = _context.OrderProducts
-            .Where(op => op.OrderId == orderId)
-            .ToList();
-
-        if (!orderProducts.Any())
-            return NotFound(new { message = "No products found for this order" });
-
-        return Ok(orderProducts);
+                return Ok(orderProducts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error fetching products in order: {ex.Message}");
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
     }
 }

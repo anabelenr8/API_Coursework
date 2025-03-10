@@ -12,13 +12,11 @@ namespace EcommerceAPI.Controllers
     public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
-    private readonly IEmailService _emailService;
     private readonly ILogger<UserController> _logger;
 
-    public UserController(IUserService userService, IEmailService emailService, ILogger<UserController> logger)
+    public UserController(IUserService userService, ILogger<UserController> logger)
     {
         _userService = userService;
-        _emailService = emailService;
         _logger = logger;
     }
 
@@ -29,16 +27,8 @@ namespace EcommerceAPI.Controllers
             return Ok(users);
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterUserDTO model)
-        {
-            var success = await _userService.RegisterUserAsync(model);
-            if (!success) return StatusCode(500, "Internal server error.");
-            return Ok(new { message = "User registered successfully! Email sent." });
-        }
-
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, UserDTO updatedUser)
+        public async Task<IActionResult> UpdateUser(string id, UserDTO updatedUser)
         {
             var success = await _userService.UpdateUserAsync(id, updatedUser);
             if (!success) return NotFound();
@@ -46,7 +36,7 @@ namespace EcommerceAPI.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeleteUser(string id)
         {
             var success = await _userService.DeleteUserAsync(id);
             if (!success) return NotFound();

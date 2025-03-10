@@ -21,6 +21,8 @@ namespace EcommerceAPI.Services
             var order = new Order
             {
                 UserId = orderDTO.UserId,
+                OrderDate = DateTime.UtcNow,
+                Status = "Pending",
                 OrderProducts = orderDTO.Items.Select(item => new OrderProduct
                 {
                     ProductId = item.ProductId,
@@ -29,11 +31,12 @@ namespace EcommerceAPI.Services
             };
 
             _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(); // Ensure ID is generated
 
+            // Return the generated Order ID
             return new OrderDTO
             {
-                Id = order.Id,
+                Id = order.Id,  // Include the newly generated Order ID
                 UserId = order.UserId,
                 OrderDate = order.OrderDate,
                 TotalAmount = order.TotalAmount,
@@ -45,6 +48,31 @@ namespace EcommerceAPI.Services
                 }).ToList()
             };
         }
+
+
+        public async Task<OrderProduct?> AddProductToOrder(OrderProduct orderProduct)
+        {
+            var order = await _context.Orders.FindAsync(orderProduct.OrderId);
+            var product = await _context.Products.FindAsync(orderProduct.ProductId);
+
+            if (order == null || product == null)
+            {
+                return null; // Handle this in the controller
+            }
+
+            var newOrderProduct = new OrderProduct
+            {
+                OrderId = orderProduct.OrderId,
+                ProductId = orderProduct.ProductId,
+                Quantity = orderProduct.Quantity
+            };
+
+            _context.OrderProducts.Add(newOrderProduct);
+            await _context.SaveChangesAsync();
+
+            return newOrderProduct;
+        }
+    
 
 
         // ✅ GET ALL ORDERS

@@ -5,7 +5,7 @@ using EcommerceAPI.Models;
 
 namespace EcommerceAPI.Data
 {
-    public class EcommerceDbContext : IdentityDbContext<User, IdentityRole<int>, int>
+    public class EcommerceDbContext : IdentityDbContext<User, IdentityRole, string>
     {
         public EcommerceDbContext(DbContextOptions<EcommerceDbContext> options) : base(options) { }
         
@@ -44,7 +44,7 @@ namespace EcommerceAPI.Data
                 .HasOne(op => op.Product)
                 .WithMany(p => p.OrderProducts) // Ensure Product has OrderProducts
                 .HasForeignKey(op => op.ProductId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasPrincipalKey(u => u.Id);
         }
     }
 }
