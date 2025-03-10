@@ -28,7 +28,7 @@ DotEnv.Load();
 builder.Services.AddDbContext<EcommerceDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Connection")));
 
-// Register Services
+// Register Services for Dependency Injections
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
@@ -37,11 +37,11 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrderProductService, OrderProductService>();
 
 
-
 // Email Service
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<EmailService>();
 
+// prevents abuse and allowas 100 request per minute per IP
 builder.Services.AddRateLimiter(options =>
 {
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
@@ -55,7 +55,6 @@ builder.Services.AddRateLimiter(options =>
         ));
 });
 
-// permit limit, minuts appsetings.json
 
 
 // Configure Identity
@@ -103,7 +102,7 @@ builder.Services.AddCors(options =>
 });
 
 
-
+// Enforces strong password rules for security.
 builder.Services.Configure<IdentityOptions>(options =>
 {
     options.Password.RequireDigit = true;
@@ -160,16 +159,32 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddControllers();
 
+// build the app
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
-app.UseRateLimiter();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-app.UseIpRateLimiting();
+// Enables Swagger for API documentation
+app.UseSwagger(); 
+app.UseSwaggerUI(); // Provides a UI to interact with API endpoints
+
+// Enforces HTTPS for security
+app.UseHttpsRedirection(); 
+
+// Enables CORS to allow cross-origin requests
+app.UseCors("AllowAll"); // Allows requests from any origin (adjust for security)
+
+// Applies .NET's built-in Rate Limiter (if configured)
+app.UseRateLimiter(); // Limits requests per IP (basic rate limiting)
+
+// Enables Authentication (JWT or other methods)
+app.UseAuthentication(); // Verifies user identity from tokens
+
+// Enables Authorization (Role-based access control)
+app.UseAuthorization(); // Ensures users have the correct permissions
+
+// Maps controller routes to API endpoints
+app.MapControllers(); // Directs requests to the right controllers/actions
+
+// Applies IP-based Rate Limiting (if using AspNetCoreRateLimit)
+app.UseIpRateLimiting(); // More advanced rate limiting with IP policies (optional)
 
 app.Run();

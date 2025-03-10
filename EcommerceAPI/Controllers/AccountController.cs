@@ -88,13 +88,18 @@ namespace EcommerceAPI.Controllers
             {
                 return NotFound("User not found.");
             }
-            var result = await _userManager.ConfirmEmailAsync(user, token);
+
+            // Decode the token to fix encoding issues
+            var decodedToken = Uri.UnescapeDataString(token);
+
+            var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
             if (result.Succeeded)
             {
                 return Ok("Email verification successful.");
             }
             return BadRequest("Email verification failed.");
         }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login(AuthModel model)
         {
