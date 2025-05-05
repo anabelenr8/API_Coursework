@@ -1,0 +1,12 @@
+.DS_Store
+# Ignore build artifacts
+bin/
+obj/
+ecommerce.db
+ecommerce.db-shm
+ecommerce.db-wal
+.env
+ca.pem
+certificate.pem
+docker-compose.yml
+new-certificate.pfx
